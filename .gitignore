@@ -1,0 +1,6 @@
+.env
+seen_listings.json
+*.log
+__pycache__/
+*.pyc
+.venv/
