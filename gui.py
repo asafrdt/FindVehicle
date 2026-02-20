@@ -8,6 +8,7 @@ import json
 import threading
 from pathlib import Path
 
+import requests as http_requests
 from flask import Flask, Response, jsonify, render_template, request
 
 import config
@@ -22,7 +23,6 @@ PROFILES_PATH = BASE_DIR / config.PROFILES_FILE
 _monitor_thread: threading.Thread | None = None
 _monitor_lock = threading.Lock()
 
-DISABLED_PARAMS = {"manufacturer", "model", "subModel"}
 BOOLEAN_PARAMS = {"priceOnly", "imgOnly", "ownerID"}
 RANGE_PARAMS = {"year", "price", "km", "hand"}
 
@@ -36,13 +36,11 @@ SVG_FAVICON = (
     '</svg>'
 )
 
+YAD2_OPTIONS_URL = "https://gw.yad2.co.il/search-options/vehicles/cars"
+
 
 def _is_monitor_running() -> bool:
     return _monitor_thread is not None and _monitor_thread.is_alive()
-
-
-def _resolve_display_name(param: str, value: str) -> str:
-    return config.DISPLAY_NAMES.get(param, {}).get(value, value)
 
 
 def _load_profiles() -> dict:
@@ -74,18 +72,32 @@ def favicon():
     return Response(SVG_FAVICON, mimetype="image/svg+xml")
 
 
+@app.get("/api/yad2/options")
+def yad2_options():
+    field = request.args.get("field", "")
+    if field not in ("manufacturer", "model", "subModel"):
+        return jsonify({"error": "invalid field"}), 400
+
+    params = {"fields": field}
+    manufacturer = request.args.get("manufacturer", "")
+    model = request.args.get("model", "")
+    if manufacturer:
+        params["manufacturer"] = manufacturer
+    if model:
+        params["model"] = model
+
+    try:
+        resp = http_requests.get(YAD2_OPTIONS_URL, params=params, timeout=10)
+        data = resp.json().get("data", {})
+        return jsonify(data)
+    except Exception:
+        return jsonify({field: []}), 502
+
+
 @app.get("/api/params")
 def get_params():
-    params = dict(config.YAD2_PARAMS)
-
-    display = {}
-    for key in DISABLED_PARAMS:
-        if key in params:
-            display[key] = _resolve_display_name(key, params[key])
-
     return jsonify({
-        "params": params,
-        "display": display,
+        "params": dict(config.YAD2_PARAMS),
         "checkInterval": config.CHECK_INTERVAL_SECONDS,
         "autoStart": config.AUTO_START,
     })
@@ -99,8 +111,6 @@ def set_params():
 
     new_params = data.get("params", {})
     for key, value in new_params.items():
-        if key in DISABLED_PARAMS:
-            continue
         config.YAD2_PARAMS[key] = str(value)
 
     if "checkInterval" in data:
@@ -190,16 +200,6 @@ def export_listings():
 
 
 # ---------------------------------------------------------------------------
-# Seen (clear / reset)
-# ---------------------------------------------------------------------------
-
-@app.delete("/api/seen")
-def clear_seen():
-    monitor.clear_seen()
-    return jsonify({"ok": True})
-
-
-# ---------------------------------------------------------------------------
 # Logs
 # ---------------------------------------------------------------------------
 
@@ -228,7 +228,7 @@ def clear_logs():
 
 
 # ---------------------------------------------------------------------------
-# Profiles (Phase 6b)
+# Profiles
 # ---------------------------------------------------------------------------
 
 @app.get("/api/profiles")

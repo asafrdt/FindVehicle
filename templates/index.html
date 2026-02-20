@@ -40,12 +40,12 @@
       gap: 10px;
     }
 
-    /* Header */
+    /* ---- Header ---- */
     header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 10px 16px;
+      padding: 8px 16px;
       background: var(--surface);
       border-radius: var(--radius);
       border: 1px solid var(--border);
@@ -53,9 +53,14 @@
       flex-wrap: wrap;
       gap: 8px;
     }
-    header h1 { font-size: 1.1rem; font-weight: 600; }
+    header h1 { font-size: 1.05rem; font-weight: 600; white-space: nowrap; }
 
-    .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .header-center {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
     .header-stats {
       font-size: 0.72rem;
       color: var(--text-muted);
@@ -67,11 +72,36 @@
     .countdown-text {
       font-size: 0.72rem;
       color: var(--accent);
-      min-width: 120px;
+      min-width: 100px;
       text-align: center;
     }
 
-    .status-badge { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-muted); }
+    .interval-group {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+    .interval-group input {
+      width: 36px;
+      padding: 3px 4px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+      font-size: 0.72rem;
+      text-align: center;
+      outline: none;
+    }
+    .interval-group input:focus { border-color: var(--accent); }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     .status-dot {
       width: 9px; height: 9px; border-radius: 50%;
       background: var(--red); transition: background 0.3s;
@@ -82,20 +112,21 @@
     }
 
     .btn {
-      padding: 6px 14px; border: none; border-radius: 5px;
+      padding: 6px 16px; border: none; border-radius: 5px;
       font-size: 0.8rem; font-weight: 500; cursor: pointer;
       transition: background 0.2s, opacity 0.2s;
     }
     .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-    .btn-start { background: var(--green); color: #111; }
-    .btn-start:hover:not(:disabled) { background: #4ade80; }
-    .btn-stop { background: var(--red); color: #111; }
-    .btn-stop:hover:not(:disabled) { background: #fca5a5; }
-    .btn-save {
-      background: var(--accent); color: #fff;
-      width: 100%; padding: 8px; font-size: 0.85rem; margin-top: 4px;
+
+    .btn-toggle {
+      min-width: 70px;
+      text-align: center;
     }
-    .btn-save:hover:not(:disabled) { background: var(--accent-hover); }
+    .btn-toggle.stopped { background: var(--green); color: #111; }
+    .btn-toggle.stopped:hover { background: #4ade80; }
+    .btn-toggle.running { background: var(--red); color: #111; }
+    .btn-toggle.running:hover { background: #fca5a5; }
+
     .btn-sm {
       padding: 3px 10px;
       font-size: 0.72rem;
@@ -108,7 +139,7 @@
     .btn-sm:hover { color: var(--text); border-color: var(--accent); }
     .btn-sm.danger:hover { border-color: var(--red); color: var(--red); }
 
-    /* CAPTCHA banner */
+    /* ---- CAPTCHA banner ---- */
     .captcha-banner {
       display: none;
       background: rgba(248,113,113,0.15);
@@ -123,7 +154,7 @@
     }
     .captcha-banner.visible { display: block; }
 
-    /* Two-column body */
+    /* ---- Two-column body ---- */
     .main { display: flex; gap: 12px; flex: 1; min-height: 0; }
 
     .col-params {
@@ -136,7 +167,7 @@
 
     .col-right {
       flex: 1; min-width: 0;
-      display: flex; flex-direction: column; gap: 10px;
+      display: flex; flex-direction: column;
     }
 
     .card {
@@ -160,7 +191,7 @@
 
     .card-actions { display: flex; gap: 6px; align-items: center; }
 
-    /* Form fields */
+    /* ---- Form fields ---- */
     .field { margin-bottom: 8px; }
     .field label {
       display: block; font-size: 0.75rem;
@@ -174,7 +205,6 @@
       outline: none; transition: border-color 0.2s;
     }
     .field input:focus { border-color: var(--accent); }
-    .field input:disabled { opacity: 0.55; cursor: not-allowed; }
     .field select {
       width: 100%; padding: 6px 8px;
       background: var(--surface2); border: 1px solid var(--border);
@@ -186,25 +216,44 @@
     .range-row input { flex: 1; }
     .range-sep { color: var(--text-muted); font-size: 0.82rem; flex-shrink: 0; }
 
-    .checkbox-group { display: flex; gap: 14px; flex-wrap: wrap; }
+    /* ---- Advanced collapsible ---- */
+    .advanced-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      padding: 4px 0;
+      user-select: none;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: right;
+    }
+    .advanced-toggle:hover { color: var(--text); }
+    .advanced-arrow {
+      display: inline-block;
+      transition: transform 0.2s;
+      font-size: 0.65rem;
+    }
+    .advanced-arrow.open { transform: rotate(90deg); }
+    .advanced-body {
+      display: none;
+      padding-top: 6px;
+    }
+    .advanced-body.open { display: block; }
+
+    .checkbox-group { display: flex; gap: 12px; flex-wrap: wrap; }
     .checkbox-item {
       display: flex; align-items: center; gap: 5px;
-      cursor: pointer; font-size: 0.8rem;
+      cursor: pointer; font-size: 0.78rem;
     }
     .checkbox-item input[type="checkbox"] {
-      width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer;
+      width: 14px; height: 14px; accent-color: var(--accent); cursor: pointer;
     }
 
-    .pending-indicator {
-      display: none;
-      font-size: 0.72rem;
-      color: var(--yellow);
-      margin-top: 4px;
-      text-align: center;
-    }
-    .pending-indicator.visible { display: block; }
-
-    /* Profiles card */
+    /* ---- Profiles card ---- */
     .profiles-row {
       display: flex; gap: 6px; align-items: center; margin-bottom: 8px;
     }
@@ -216,128 +265,177 @@
       outline: none;
     }
 
-    /* Listings panel */
+    /* ---- Multi-select dropdown ---- */
+    .multi-select { position: relative; }
+    .ms-trigger {
+      width: 100%;
+      min-height: 32px;
+      padding: 4px 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--text);
+      font-size: 0.82rem;
+      cursor: pointer;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      align-items: center;
+      transition: border-color 0.2s;
+      text-align: right;
+    }
+    .ms-trigger:hover, .ms-trigger.open { border-color: var(--accent); }
+    .ms-trigger .ms-placeholder { color: var(--text-muted); font-size: 0.78rem; }
+    .ms-tag {
+      display: inline-flex; align-items: center; gap: 3px;
+      background: var(--accent); color: #fff;
+      padding: 1px 7px; border-radius: 3px;
+      font-size: 0.7rem; white-space: nowrap;
+      max-width: 140px; overflow: hidden; text-overflow: ellipsis;
+    }
+    .ms-tag-x {
+      cursor: pointer; font-weight: 700; margin-right: 2px;
+      font-size: 0.75rem; line-height: 1;
+    }
+    .ms-tag-x:hover { color: var(--red); }
+    .ms-dropdown {
+      display: none; position: absolute; top: 100%; right: 0; left: 0;
+      z-index: 50; background: var(--surface);
+      border: 1px solid var(--accent);
+      border-radius: 0 0 5px 5px;
+      max-height: 220px; overflow: hidden; flex-direction: column;
+    }
+    .ms-dropdown.open { display: flex; }
+    .ms-search {
+      width: 100%; padding: 6px 8px;
+      background: var(--surface2); border: none;
+      border-bottom: 1px solid var(--border);
+      color: var(--text); font-size: 0.78rem; outline: none;
+    }
+    .ms-list { overflow-y: auto; flex: 1; padding: 4px 0; }
+    .ms-item {
+      display: flex; align-items: center; gap: 6px;
+      padding: 4px 10px; cursor: pointer; font-size: 0.78rem;
+      transition: background 0.15s;
+    }
+    .ms-item:hover { background: var(--surface2); }
+    .ms-item input[type="checkbox"] {
+      width: 14px; height: 14px; accent-color: var(--accent);
+      cursor: pointer; flex-shrink: 0;
+    }
+    .ms-item label {
+      cursor: pointer; flex: 1; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
+    }
+    .ms-empty, .ms-loading {
+      padding: 10px; text-align: center;
+      color: var(--text-muted); font-size: 0.75rem;
+    }
+
+    /* ---- Listings panel ---- */
     .listings-card {
-      flex: 0 0 auto;
-      max-height: 40%;
+      flex: 1;
       display: flex;
       flex-direction: column;
+      min-height: 0;
     }
     .listings-card h2 { color: var(--green); }
 
     .listings-toolbar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 6px;
+      display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
     }
     .listings-toolbar select {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      color: var(--text);
-      font-size: 0.72rem;
-      padding: 3px 6px;
-      outline: none;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 4px; color: var(--text); font-size: 0.72rem;
+      padding: 3px 6px; outline: none;
     }
 
     .listings-box {
-      flex: 1;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
+      flex: 1; overflow-y: auto;
+      display: flex; flex-direction: column; gap: 6px;
     }
 
     .listing-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 8px 10px;
-      background: var(--green-dim);
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px; background: var(--green-dim);
       border: 1px solid rgba(52,211,153,0.25);
-      border-radius: 6px;
-      font-size: 0.8rem;
-      direction: rtl;
+      border-radius: 6px; font-size: 0.8rem; direction: rtl;
     }
 
     .listing-thumb {
-      width: 48px; height: 48px;
-      border-radius: 4px;
-      object-fit: cover;
-      flex-shrink: 0;
-      background: var(--surface2);
+      width: 48px; height: 48px; border-radius: 4px;
+      object-fit: cover; flex-shrink: 0; background: var(--surface2);
     }
 
     .listing-info {
-      display: flex;
-      gap: 14px;
-      flex-wrap: wrap;
-      align-items: center;
-      min-width: 0;
-      flex: 1;
+      display: flex; gap: 14px; flex-wrap: wrap;
+      align-items: center; min-width: 0; flex: 1;
     }
 
-    .listing-tag {
-      color: var(--text-muted);
-      font-size: 0.72rem;
-      white-space: nowrap;
-    }
+    .listing-tag { color: var(--text-muted); font-size: 0.72rem; white-space: nowrap; }
     .listing-tag b { color: var(--text); font-weight: 500; }
 
-    .listing-actions {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-      flex-shrink: 0;
-    }
+    .listing-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
 
     .listing-link {
-      color: var(--green);
-      text-decoration: none;
-      font-size: 0.78rem;
-      font-weight: 500;
-      border: 1px solid rgba(52,211,153,0.3);
-      padding: 3px 10px;
-      border-radius: 4px;
-      transition: background 0.2s;
+      color: var(--green); text-decoration: none; font-size: 0.78rem;
+      font-weight: 500; border: 1px solid rgba(52,211,153,0.3);
+      padding: 3px 10px; border-radius: 4px; transition: background 0.2s;
     }
     .listing-link:hover { background: rgba(52,211,153,0.15); }
 
     .dismiss-btn {
-      background: none;
-      border: none;
-      color: var(--text-muted);
-      cursor: pointer;
-      font-size: 0.9rem;
-      padding: 2px 6px;
-      border-radius: 3px;
-      transition: color 0.2s, background 0.2s;
+      background: none; border: none; color: var(--text-muted);
+      cursor: pointer; font-size: 0.9rem; padding: 2px 6px;
+      border-radius: 3px; transition: color 0.2s, background 0.2s;
     }
     .dismiss-btn:hover { color: var(--red); background: rgba(248,113,113,0.15); }
 
-    .listing-time {
-      color: var(--text-muted);
-      font-size: 0.68rem;
-      flex-shrink: 0;
-    }
+    .listing-time { color: var(--text-muted); font-size: 0.68rem; flex-shrink: 0; }
 
     .listings-empty {
-      color: var(--text-muted);
-      font-size: 0.8rem;
-      text-align: center;
-      padding: 16px 0;
+      color: var(--text-muted); font-size: 0.8rem;
+      text-align: center; padding: 16px 0;
     }
 
-    /* Log panel */
-    .log-card { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+    /* ---- Bottom log console ---- */
+    .log-console {
+      flex-shrink: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      transition: height 0.2s;
+    }
+
+    .log-console-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 5px 12px;
+      cursor: pointer;
+      user-select: none;
+      flex-shrink: 0;
+    }
+    .log-console-header h2 {
+      font-size: 0.78rem; font-weight: 600;
+      color: var(--accent); display: flex; align-items: center; gap: 6px;
+    }
+    .log-console-header .log-actions {
+      display: flex; gap: 6px; align-items: center;
+    }
+
+    .log-toggle-arrow {
+      display: inline-block; font-size: 0.6rem;
+      transition: transform 0.2s;
+    }
+    .log-toggle-arrow.collapsed { transform: rotate(180deg); }
 
     .log-box {
-      flex: 1;
       background: #0a0c12;
-      border: 1px solid var(--border);
-      border-radius: 5px;
-      padding: 10px;
+      border-top: 1px solid var(--border);
+      padding: 8px 10px;
       overflow-y: auto;
       font-family: 'Courier New', monospace;
       font-size: 0.72rem;
@@ -345,19 +443,20 @@
       direction: ltr;
       text-align: left;
       color: var(--text-muted);
+      transition: height 0.2s;
     }
+    .log-box.expanded { height: 160px; }
+    .log-box.collapsed { height: 0; padding: 0 10px; overflow: hidden; }
     .log-box .log-line { white-space: pre-wrap; word-break: break-all; }
     .log-box .log-line-info { color: var(--text); }
     .log-box .log-line-warning { color: var(--yellow); }
     .log-box .log-line-error { color: var(--red); }
     .log-box .log-line-new {
-      color: var(--green);
-      font-weight: 600;
-      background: rgba(52,211,153,0.08);
-      border-radius: 2px;
+      color: var(--green); font-weight: 600;
+      background: rgba(52,211,153,0.08); border-radius: 2px;
     }
 
-    /* Toast */
+    /* ---- Toast ---- */
     .toast {
       position: fixed; bottom: 16px; left: 50%;
       transform: translateX(-50%) translateY(60px);
@@ -371,20 +470,25 @@
 </head>
 <body>
   <div class="shell">
+    <!-- ---- HEADER ---- -->
     <header>
       <h1>FindVehicle</h1>
-      <div class="header-right">
+      <div class="header-center">
         <div class="header-stats">
           <span>בדיקות: <b id="statChecks">0</b></span>
           <span>נמצאו: <b id="statFound">0</b></span>
         </div>
         <span class="countdown-text" id="countdown"></span>
-        <div class="status-badge">
-          <span class="status-dot" id="statusDot"></span>
-          <span id="statusText">עצור</span>
+        <div class="interval-group">
+          <span>מרווח:</span>
+          <input type="number" id="intervalMin" min="0" max="60" value="0" title="דקות">
+          <span>:</span>
+          <input type="number" id="intervalSec" min="0" max="59" value="20" title="שניות">
         </div>
-        <button class="btn btn-start" id="btnStart" onclick="startMonitor()">הפעל</button>
-        <button class="btn btn-stop"  id="btnStop"  onclick="stopMonitor()" disabled>עצור</button>
+      </div>
+      <div class="header-right">
+        <span class="status-dot" id="statusDot"></span>
+        <button class="btn btn-toggle stopped" id="btnToggle" onclick="toggleMonitor()">הפעל</button>
       </div>
     </header>
 
@@ -392,13 +496,12 @@
       ⚠ CAPTCHA — <span id="captchaText">ממתין...</span>
     </div>
 
+    <!-- ---- MAIN (two columns) ---- -->
     <div class="main">
       <!-- LEFT: Profiles + Parameters -->
       <div class="col-params">
         <div class="card">
-          <div class="card-header">
-            <h2>פרופילים</h2>
-          </div>
+          <div class="card-header"><h2>פרופילים</h2></div>
           <div class="profiles-row">
             <select id="profileSelect" onchange="onProfileSelect()">
               <option value="">— בחר פרופיל —</option>
@@ -415,15 +518,15 @@
           <h2>פרמטרי חיפוש</h2>
           <div class="field">
             <label>יצרן</label>
-            <input type="text" id="manufacturer" disabled>
+            <div class="multi-select" id="ms-manufacturer" data-field="manufacturer"></div>
           </div>
           <div class="field">
             <label>דגם</label>
-            <input type="text" id="model" disabled>
+            <div class="multi-select" id="ms-model" data-field="model"></div>
           </div>
           <div class="field">
             <label>תת-דגם</label>
-            <input type="text" id="subModel" disabled>
+            <div class="multi-select" id="ms-subModel" data-field="subModel"></div>
           </div>
           <div class="field">
             <label>שנה</label>
@@ -457,47 +560,29 @@
               <input type="number" id="handTo" min="0" max="10">
             </div>
           </div>
-          <div class="field">
-            <div class="checkbox-group">
-              <label class="checkbox-item">
-                <input type="checkbox" id="priceOnly"> מחיר בלבד
-              </label>
-              <label class="checkbox-item">
-                <input type="checkbox" id="imgOnly"> תמונות בלבד
-              </label>
-              <label class="checkbox-item">
-                <input type="checkbox" id="ownerID"> מוכר פרטי
-              </label>
+
+          <!-- Advanced section -->
+          <div style="margin-top: 4px;">
+            <button class="advanced-toggle" id="advancedToggle" onclick="toggleAdvanced()">
+              <span class="advanced-arrow" id="advancedArrow">▶</span>
+              <span>מתקדם</span>
+            </button>
+            <div class="advanced-body" id="advancedBody">
+              <div class="checkbox-group">
+                <label class="checkbox-item"><input type="checkbox" id="priceOnly"> מחיר בלבד</label>
+                <label class="checkbox-item"><input type="checkbox" id="imgOnly"> תמונות בלבד</label>
+                <label class="checkbox-item"><input type="checkbox" id="ownerID"> מוכר פרטי</label>
+              </div>
+              <div class="checkbox-group" style="margin-top: 8px;">
+                <label class="checkbox-item"><input type="checkbox" id="autoStart"> הפעלה אוטומטית</label>
+                <label class="checkbox-item"><input type="checkbox" id="browserNotif"> התראות דפדפן</label>
+              </div>
             </div>
-          </div>
-          <div class="field">
-            <label>מרווח בדיקה</label>
-            <div class="range-row">
-              <input type="number" id="intervalMin" min="0" max="60" placeholder="דק׳">
-              <span class="range-sep">דק׳</span>
-              <input type="number" id="intervalSec" min="0" max="59" placeholder="שנ׳">
-              <span class="range-sep">שנ׳</span>
-            </div>
-          </div>
-          <div class="field">
-            <div class="checkbox-group">
-              <label class="checkbox-item">
-                <input type="checkbox" id="autoStart"> הפעלה אוטומטית
-              </label>
-              <label class="checkbox-item">
-                <input type="checkbox" id="browserNotif"> התראות דפדפן
-              </label>
-            </div>
-          </div>
-          <button class="btn btn-save" onclick="saveParams()">שמור שינויים</button>
-          <div class="pending-indicator" id="pendingIndicator">⏳ שינויים ממתינים לסבב הבא</div>
-          <div style="margin-top:8px; text-align:center;">
-            <button class="btn-sm danger" onclick="resetSeen()">איפוס היסטוריה</button>
           </div>
         </div>
       </div>
 
-      <!-- RIGHT: Listings + Logs -->
+      <!-- RIGHT: Listings -->
       <div class="col-right">
         <div class="card listings-card">
           <div class="card-header">
@@ -519,36 +604,41 @@
             </select>
           </div>
           <div class="listings-box" id="listingsBox">
-            <div class="listings-empty">לא נמצאו רכבים חדשים עדיין</div>
+            <div class="listings-empty">לא נמצאו רכבים עדיין</div>
           </div>
-        </div>
-
-        <div class="card log-card">
-          <div class="card-header">
-            <h2>יומן</h2>
-            <div class="card-actions">
-              <button class="btn-sm danger" onclick="clearLogs()">נקה יומן</button>
-            </div>
-          </div>
-          <div class="log-box" id="logBox"></div>
         </div>
       </div>
+    </div>
+
+    <!-- ---- BOTTOM LOG CONSOLE ---- -->
+    <div class="log-console" id="logConsole">
+      <div class="log-console-header" onclick="toggleLogConsole()">
+        <h2>
+          <span class="log-toggle-arrow" id="logArrow">▼</span>
+          יומן
+        </h2>
+        <div class="log-actions">
+          <button class="btn-sm danger" onclick="event.stopPropagation(); clearLogs()">נקה יומן</button>
+        </div>
+      </div>
+      <div class="log-box expanded" id="logBox"></div>
     </div>
   </div>
 
   <div class="toast" id="toast"></div>
 
   <script>
-    /* ---- State ---- */
+    /* ==== State ==== */
     let _listingsData = [];
     let _prevListingsCount = 0;
-    let _savedParams = null;
-    let _lastCheckAt = null;
     let _nextCheckAt = null;
     let _countdownInterval = null;
     let _isRunning = false;
+    let _saveDebounceTimer = null;
+    let _logExpanded = true;
+    let _initialLoadDone = false;
 
-    /* ---- Helpers ---- */
+    /* ==== Helpers ==== */
     function showToast(msg, ms = 2500) {
       const el = document.getElementById('toast');
       el.textContent = msg;
@@ -603,125 +693,280 @@
       return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
     }
 
-    function getCurrentFormParams() {
-      return {
-        year: toRange(document.getElementById('yearFrom').value, document.getElementById('yearTo').value),
-        price: toRange(document.getElementById('priceFrom').value || '-1', document.getElementById('priceTo').value || '-1'),
-        km: toRange(document.getElementById('kmFrom').value || '-1', document.getElementById('kmTo').value || '-1'),
-        hand: toRange(document.getElementById('handFrom').value, document.getElementById('handTo').value),
-        priceOnly: document.getElementById('priceOnly').checked ? '1' : '0',
-        imgOnly: document.getElementById('imgOnly').checked ? '1' : '0',
-        ownerID: document.getElementById('ownerID').checked ? '1' : '0',
-        checkInterval: String(getIntervalSeconds()),
-      };
+    /* ==== Advanced toggle ==== */
+    function toggleAdvanced() {
+      const body = document.getElementById('advancedBody');
+      const arrow = document.getElementById('advancedArrow');
+      const isOpen = body.classList.toggle('open');
+      arrow.classList.toggle('open', isOpen);
     }
 
-    /* ---- Param-change awareness (Phase 6a) ---- */
-    function checkPendingChanges() {
-      if (!_isRunning || !_savedParams) {
-        document.getElementById('pendingIndicator').classList.remove('visible');
+    /* ==== Log console toggle ==== */
+    function toggleLogConsole() {
+      _logExpanded = !_logExpanded;
+      const box = document.getElementById('logBox');
+      const arrow = document.getElementById('logArrow');
+      box.classList.toggle('expanded', _logExpanded);
+      box.classList.toggle('collapsed', !_logExpanded);
+      arrow.classList.toggle('collapsed', !_logExpanded);
+    }
+
+    /* ==================================================================
+       Multi-Select Component
+       ================================================================== */
+    const _msInstances = {};
+
+    function msInit(containerId, placeholder) {
+      const container = document.getElementById(containerId);
+      const field = container.dataset.field;
+      const state = {
+        field, options: [], selected: new Map(),
+        isOpen: false, container, placeholder,
+      };
+
+      container.innerHTML = `
+        <div class="ms-trigger" tabindex="0">
+          <span class="ms-placeholder">${escapeHtml(placeholder)}</span>
+        </div>
+        <div class="ms-dropdown">
+          <input class="ms-search" type="text" placeholder="חיפוש...">
+          <div class="ms-list"></div>
+        </div>`;
+
+      state.trigger = container.querySelector('.ms-trigger');
+      state.dropdown = container.querySelector('.ms-dropdown');
+      state.searchInput = container.querySelector('.ms-search');
+      state.listEl = container.querySelector('.ms-list');
+
+      state.trigger.addEventListener('click', (e) => {
+        if (e.target.closest('.ms-tag-x')) return;
+        msToggle(state);
+      });
+      state.searchInput.addEventListener('input', () => msRenderList(state));
+
+      _msInstances[containerId] = state;
+      return state;
+    }
+
+    function msToggle(state) {
+      state.isOpen = !state.isOpen;
+      state.dropdown.classList.toggle('open', state.isOpen);
+      state.trigger.classList.toggle('open', state.isOpen);
+      if (state.isOpen) {
+        state.searchInput.value = '';
+        msRenderList(state);
+        state.searchInput.focus();
+      }
+    }
+
+    function msClose(state) {
+      state.isOpen = false;
+      state.dropdown.classList.remove('open');
+      state.trigger.classList.remove('open');
+    }
+
+    function msSetOptions(state, options) {
+      state.options = options;
+      msRenderList(state);
+      msRenderTrigger(state);
+    }
+
+    function msSetLoading(state) {
+      state.listEl.innerHTML = '<div class="ms-loading">טוען...</div>';
+    }
+
+    function msGetSelectedValues(state) { return Array.from(state.selected.keys()); }
+    function msGetSelectedCSV(state) { return msGetSelectedValues(state).join(','); }
+
+    function msSetSelectedByValues(state, values) {
+      state.selected.clear();
+      for (const v of values) {
+        const opt = state.options.find(o => o.value === v);
+        if (opt) state.selected.set(v, opt.text);
+      }
+      msRenderTrigger(state);
+      msRenderList(state);
+    }
+
+    function msRenderTrigger(state) {
+      if (state.selected.size === 0) {
+        state.trigger.innerHTML = `<span class="ms-placeholder">${escapeHtml(state.placeholder)}</span>`;
         return;
       }
-      const current = getCurrentFormParams();
-      const changed = JSON.stringify(current) !== JSON.stringify(_savedParams);
-      document.getElementById('pendingIndicator').classList.toggle('visible', changed);
+      let html = '';
+      for (const [val, text] of state.selected) {
+        html += `<span class="ms-tag" title="${escapeHtml(text)}">${escapeHtml(text)}<span class="ms-tag-x" data-val="${escapeHtml(val)}">×</span></span>`;
+      }
+      state.trigger.innerHTML = html;
+      state.trigger.querySelectorAll('.ms-tag-x').forEach(el => {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          state.selected.delete(el.dataset.val);
+          msRenderTrigger(state);
+          msRenderList(state);
+          onMultiSelectChange(state.field);
+        });
+      });
+    }
+
+    function msRenderList(state) {
+      const query = (state.searchInput?.value || '').trim().toLowerCase();
+      const filtered = query
+        ? state.options.filter(o => o.text.toLowerCase().includes(query) || o.value.includes(query))
+        : state.options;
+
+      if (filtered.length === 0) {
+        state.listEl.innerHTML = state.options.length === 0
+          ? '<div class="ms-empty">אין אפשרויות</div>'
+          : '<div class="ms-empty">אין תוצאות</div>';
+        return;
+      }
+
+      state.listEl.innerHTML = filtered.map(o => {
+        const checked = state.selected.has(o.value) ? 'checked' : '';
+        return `<div class="ms-item" data-val="${escapeHtml(o.value)}"><input type="checkbox" ${checked}><label>${escapeHtml(o.text)}</label></div>`;
+      }).join('');
+
+      state.listEl.querySelectorAll('.ms-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const val = item.dataset.val;
+          const opt = state.options.find(o => o.value === val);
+          if (!opt) return;
+          if (state.selected.has(val)) state.selected.delete(val);
+          else state.selected.set(val, opt.text);
+          msRenderTrigger(state);
+          msRenderList(state);
+          onMultiSelectChange(state.field);
+        });
+      });
+    }
+
+    document.addEventListener('click', (e) => {
+      for (const id in _msInstances) {
+        const st = _msInstances[id];
+        if (st.isOpen && !st.container.contains(e.target)) msClose(st);
+      }
+    });
+
+    /* ==================================================================
+       Cascading fetch logic
+       ================================================================== */
+    async function fetchOptions(field, params) {
+      const qs = new URLSearchParams({ field, ...params });
+      try {
+        const resp = await fetch(`/api/yad2/options?${qs}`);
+        const data = await resp.json();
+        return (data[field] || []).map(o => ({ value: String(o.value), text: o.text }));
+      } catch (e) { console.error('fetchOptions error', e); return []; }
+    }
+
+    async function loadManufacturers(preselect) {
+      const ms = _msInstances['ms-manufacturer'];
+      msSetLoading(ms);
+      const opts = await fetchOptions('manufacturer', {});
+      msSetOptions(ms, opts);
+      if (preselect) msSetSelectedByValues(ms, preselect.split(',').filter(Boolean));
+    }
+
+    async function loadModels(preselect) {
+      const ms = _msInstances['ms-model'];
+      const mfr = msGetSelectedCSV(_msInstances['ms-manufacturer']);
+      if (!mfr) { msSetOptions(ms, []); return; }
+      msSetLoading(ms);
+      const opts = await fetchOptions('model', { manufacturer: mfr });
+      msSetOptions(ms, opts);
+      if (preselect) msSetSelectedByValues(ms, preselect.split(',').filter(Boolean));
+    }
+
+    async function loadSubModels(preselect) {
+      const ms = _msInstances['ms-subModel'];
+      const mfr = msGetSelectedCSV(_msInstances['ms-manufacturer']);
+      const mdl = msGetSelectedCSV(_msInstances['ms-model']);
+      if (!mfr || !mdl) { msSetOptions(ms, []); return; }
+      msSetLoading(ms);
+      const opts = await fetchOptions('subModel', { manufacturer: mfr, model: mdl });
+      msSetOptions(ms, opts);
+      if (preselect) msSetSelectedByValues(ms, preselect.split(',').filter(Boolean));
+    }
+
+    async function onMultiSelectChange(field) {
+      if (field === 'manufacturer') {
+        const modelMs = _msInstances['ms-model'];
+        const subMs = _msInstances['ms-subModel'];
+        modelMs.selected.clear(); subMs.selected.clear();
+        msRenderTrigger(modelMs); msRenderTrigger(subMs);
+        msSetOptions(subMs, []);
+        await loadModels();
+      } else if (field === 'model') {
+        const subMs = _msInstances['ms-subModel'];
+        subMs.selected.clear(); msRenderTrigger(subMs);
+        await loadSubModels();
+      }
+      debouncedSave();
+    }
+
+    /* ==================================================================
+       Auto-save with debounce
+       ================================================================== */
+    function debouncedSave() {
+      if (!_initialLoadDone) return;
+      if (_saveDebounceTimer) clearTimeout(_saveDebounceTimer);
+      _saveDebounceTimer = setTimeout(() => saveParams(true), 600);
     }
 
     document.addEventListener('input', (e) => {
-      if (e.target.closest('.col-params')) checkPendingChanges();
+      if (e.target.closest('.col-params') || e.target.closest('.interval-group')) {
+        debouncedSave();
+      }
+    });
+    document.addEventListener('change', (e) => {
+      if (e.target.closest('.col-params') || e.target.closest('.interval-group')) {
+        debouncedSave();
+      }
     });
 
-    /* ---- Countdown (Phase 3a) ---- */
-    function startCountdownTicker() {
-      if (_countdownInterval) clearInterval(_countdownInterval);
-      _countdownInterval = setInterval(updateCountdown, 1000);
-    }
-
-    function updateCountdown() {
-      const el = document.getElementById('countdown');
-      if (!_nextCheckAt || !_isRunning) {
-        el.textContent = '';
-        return;
-      }
-      const remaining = Math.max(0, Math.round((new Date(_nextCheckAt) - Date.now()) / 1000));
-      if (remaining <= 0) {
-        el.textContent = 'בודק עכשיו...';
-      } else {
-        el.textContent = `בדיקה הבאה בעוד ${fmtCountdown(remaining)} דקות`;
-      }
-    }
-
-    /* ---- Browser notifications + beep (Phase 5a) ---- */
-    function requestNotifPermission() {
-      if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission();
-      }
-    }
-
-    function playBeep() {
-      try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.frequency.value = 880;
-        gain.gain.value = 0.15;
-        osc.start();
-        osc.stop(ctx.currentTime + 0.15);
-      } catch (e) { /* ignore */ }
-    }
-
-    function notifyNewListings(newItems) {
-      const notifEnabled = document.getElementById('browserNotif').checked;
-      if (!notifEnabled) return;
-      playBeep();
-      if ('Notification' in window && Notification.permission === 'granted') {
-        const first = newItems[0] || {};
-        new Notification('רכב חדש!', {
-          body: `${fmtPrice(first.price)} · ${first.area || ''}`,
-          icon: '/favicon.ico',
-        });
-      }
-    }
-
-    /* ---- Params ---- */
+    /* ==== Params ==== */
     async function loadParams() {
       try {
         const resp = await fetch('/api/params');
         const data = await resp.json();
-        document.getElementById('manufacturer').value = data.display.manufacturer || data.params.manufacturer;
-        document.getElementById('model').value = data.display.model || data.params.model;
-        document.getElementById('subModel').value = data.display.subModel || data.params.subModel;
-        const [yf, yt] = parseRange(data.params.year);
+        const p = data.params;
+
+        await loadManufacturers(p.manufacturer);
+        await loadModels(p.model);
+        await loadSubModels(p.subModel);
+
+        const [yf, yt] = parseRange(p.year);
         document.getElementById('yearFrom').value = yf;
         document.getElementById('yearTo').value = yt;
-        const [pf, pt] = parseRange(data.params.price);
+        const [pf, pt] = parseRange(p.price);
         document.getElementById('priceFrom').value = pf === '-1' ? '' : pf;
         document.getElementById('priceTo').value = pt === '-1' ? '' : pt;
-        const [kf, kt] = parseRange(data.params.km);
+        const [kf, kt] = parseRange(p.km);
         document.getElementById('kmFrom').value = kf === '-1' ? '' : kf;
         document.getElementById('kmTo').value = kt === '-1' ? '' : kt;
-        const [hf, ht] = parseRange(data.params.hand);
+        const [hf, ht] = parseRange(p.hand);
         document.getElementById('handFrom').value = hf;
         document.getElementById('handTo').value = ht;
-        document.getElementById('priceOnly').checked = data.params.priceOnly === '1';
-        document.getElementById('imgOnly').checked = data.params.imgOnly === '1';
-        document.getElementById('ownerID').checked = data.params.ownerID === '1';
+        document.getElementById('priceOnly').checked = p.priceOnly === '1';
+        document.getElementById('imgOnly').checked = p.imgOnly === '1';
+        document.getElementById('ownerID').checked = p.ownerID === '1';
         setIntervalFields(data.checkInterval);
         document.getElementById('autoStart').checked = !!data.autoStart;
 
-        _savedParams = getCurrentFormParams();
-        checkPendingChanges();
+        _initialLoadDone = true;
 
         if (data.autoStart && !_isRunning) {
-          startMonitor();
+          toggleMonitor();
         }
       } catch (e) { console.error('Failed to load params', e); }
     }
 
-    async function saveParams() {
+    async function saveParams(silent) {
       const params = {
+        manufacturer: msGetSelectedCSV(_msInstances['ms-manufacturer']),
+        model: msGetSelectedCSV(_msInstances['ms-model']),
+        subModel: msGetSelectedCSV(_msInstances['ms-subModel']),
         year: toRange(document.getElementById('yearFrom').value, document.getElementById('yearTo').value),
         price: toRange(document.getElementById('priceFrom').value || '-1', document.getElementById('priceTo').value || '-1'),
         km: toRange(document.getElementById('kmFrom').value || '-1', document.getElementById('kmTo').value || '-1'),
@@ -739,46 +984,75 @@
           body: JSON.stringify({ params, checkInterval, autoStart }),
         });
         const data = await resp.json();
-        if (data.ok) {
-          showToast('הפרמטרים נשמרו בהצלחה');
-          _savedParams = getCurrentFormParams();
-          checkPendingChanges();
-        } else {
-          showToast('שגיאה: ' + (data.error || 'unknown'));
-        }
-      } catch (e) { showToast('שגיאה בשמירה'); }
+        if (!silent && data.ok) showToast('הפרמטרים נשמרו');
+      } catch (e) { if (!silent) showToast('שגיאה בשמירה'); }
     }
 
-    /* ---- Monitor control ---- */
+    /* ==== Countdown ==== */
+    function startCountdownTicker() {
+      if (_countdownInterval) clearInterval(_countdownInterval);
+      _countdownInterval = setInterval(updateCountdown, 1000);
+    }
+
+    function updateCountdown() {
+      const el = document.getElementById('countdown');
+      if (!_nextCheckAt || !_isRunning) { el.textContent = ''; return; }
+      const remaining = Math.max(0, Math.round((new Date(_nextCheckAt) - Date.now()) / 1000));
+      el.textContent = remaining <= 0
+        ? 'בודק עכשיו...'
+        : `בדיקה הבאה בעוד ${fmtCountdown(remaining)} דקות`;
+    }
+
+    /* ==== Browser notifications + beep ==== */
+    function requestNotifPermission() {
+      if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+    }
+
+    function playBeep() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.value = 880; gain.gain.value = 0.15;
+        osc.start(); osc.stop(ctx.currentTime + 0.15);
+      } catch (e) { /* ignore */ }
+    }
+
+    function notifyNewListings(newItems) {
+      if (!document.getElementById('browserNotif').checked) return;
+      playBeep();
+      if ('Notification' in window && Notification.permission === 'granted') {
+        const first = newItems[0] || {};
+        new Notification('רכב חדש!', { body: `${fmtPrice(first.price)} · ${first.area || ''}`, icon: '/favicon.ico' });
+      }
+    }
+
+    /* ==== Monitor control ==== */
     async function pollStatus() {
       try {
         const resp = await fetch('/api/monitor/status');
         const data = await resp.json();
         _isRunning = data.running;
-        document.getElementById('statusDot').classList.toggle('running', _isRunning);
-        document.getElementById('statusText').textContent = _isRunning ? 'פועל' : 'עצור';
-        document.getElementById('btnStart').disabled = _isRunning;
-        document.getElementById('btnStop').disabled = !_isRunning;
+
+        const dot = document.getElementById('statusDot');
+        const btn = document.getElementById('btnToggle');
+        dot.classList.toggle('running', _isRunning);
+        btn.textContent = _isRunning ? 'עצור' : 'הפעל';
+        btn.classList.toggle('running', _isRunning);
+        btn.classList.toggle('stopped', !_isRunning);
 
         document.getElementById('statChecks').textContent = data.checks_count || 0;
         document.getElementById('statFound').textContent = data.found_total || 0;
-
         _nextCheckAt = data.next_check_at;
         updateCountdown();
-
-        const newLastCheck = data.last_check_at;
-        if (newLastCheck && newLastCheck !== _lastCheckAt) {
-          _lastCheckAt = newLastCheck;
-          checkPendingChanges();
-        }
 
         const banner = document.getElementById('captchaBanner');
         if (data.captcha_active) {
           banner.classList.add('visible');
           if (data.captcha_backoff_until) {
             const until = new Date(data.captcha_backoff_until);
-            document.getElementById('captchaText').textContent =
-              `המתנה עד ${until.toLocaleTimeString('he-IL')}`;
+            document.getElementById('captchaText').textContent = `המתנה עד ${until.toLocaleTimeString('he-IL')}`;
           }
         } else {
           banner.classList.remove('visible');
@@ -786,28 +1060,27 @@
       } catch (e) { /* ignore */ }
     }
 
-    async function startMonitor() {
+    async function toggleMonitor() {
+      const btn = document.getElementById('btnToggle');
+      btn.disabled = true;
       try {
-        const resp = await fetch('/api/monitor/start', { method: 'POST' });
-        const data = await resp.json();
-        if (data.ok) showToast('המוניטור הופעל');
-        else showToast(data.error || 'שגיאה');
-        pollStatus();
-      } catch (e) { showToast('שגיאה בהפעלה'); }
+        if (_isRunning) {
+          const resp = await fetch('/api/monitor/stop', { method: 'POST' });
+          const data = await resp.json();
+          if (data.ok) showToast('המוניטור נעצר');
+          else showToast(data.error || 'שגיאה');
+        } else {
+          const resp = await fetch('/api/monitor/start', { method: 'POST' });
+          const data = await resp.json();
+          if (data.ok) showToast('המוניטור הופעל');
+          else showToast(data.error || 'שגיאה');
+        }
+        await pollStatus();
+      } catch (e) { showToast('שגיאה'); }
+      btn.disabled = false;
     }
 
-    async function stopMonitor() {
-      document.getElementById('btnStop').disabled = true;
-      try {
-        const resp = await fetch('/api/monitor/stop', { method: 'POST' });
-        const data = await resp.json();
-        if (data.ok) showToast('המוניטור נעצר');
-        else showToast(data.error || 'שגיאה');
-        pollStatus();
-      } catch (e) { showToast('שגיאה בעצירה'); }
-    }
-
-    /* ---- Listings ---- */
+    /* ==== Listings ==== */
     function sortListings(items) {
       const mode = document.getElementById('sortSelect').value;
       const sorted = [...items];
@@ -825,7 +1098,7 @@
     function renderListings() {
       const box = document.getElementById('listingsBox');
       if (_listingsData.length === 0) {
-        box.innerHTML = '<div class="listings-empty">לא נמצאו רכבים חדשים עדיין</div>';
+        box.innerHTML = '<div class="listings-empty">לא נמצאו רכבים עדיין</div>';
         return;
       }
       const sorted = sortListings(_listingsData);
@@ -856,8 +1129,7 @@
         const data = await resp.json();
         const items = data.listings || [];
         if (items.length > _prevListingsCount && _prevListingsCount > 0) {
-          const diff = items.slice(_prevListingsCount);
-          notifyNewListings(diff);
+          notifyNewListings(items.slice(_prevListingsCount));
         }
         _prevListingsCount = items.length;
         _listingsData = items;
@@ -875,30 +1147,19 @@
     }
 
     async function clearAllListings() {
-      if (!confirm('למחוק את כל הרכבים שנמצאו?')) return;
+      if (!confirm('למחוק את כל הרכבים ולאפס את ההיסטוריה? רכבים קיימים יופיעו שוב כחדשים.')) return;
       try {
         await fetch('/api/listings', { method: 'DELETE' });
         _listingsData = [];
         _prevListingsCount = 0;
         renderListings();
-        showToast('הרשימה נוקתה');
+        showToast('הרשימה וההיסטוריה אופסו');
       } catch (e) { showToast('שגיאה'); }
     }
 
-    function exportCsv() {
-      window.open('/api/listings/export', '_blank');
-    }
+    function exportCsv() { window.open('/api/listings/export', '_blank'); }
 
-    /* ---- Seen reset (Phase 4c) ---- */
-    async function resetSeen() {
-      if (!confirm('לאפס את היסטוריית הרכבים שנצפו? הרכבים הקיימים יופיעו שוב כחדשים.')) return;
-      try {
-        await fetch('/api/seen', { method: 'DELETE' });
-        showToast('ההיסטוריה אופסה');
-      } catch (e) { showToast('שגיאה באיפוס'); }
-    }
-
-    /* ---- Profiles (Phase 6b) ---- */
+    /* ==== Profiles ==== */
     async function loadProfiles() {
       try {
         const resp = await fetch('/api/profiles');
@@ -908,8 +1169,7 @@
         sel.innerHTML = '<option value="">— בחר פרופיל —</option>';
         for (const name of Object.keys(profiles)) {
           const opt = document.createElement('option');
-          opt.value = name;
-          opt.textContent = name;
+          opt.value = name; opt.textContent = name;
           sel.appendChild(opt);
         }
         if (current && profiles[current]) sel.value = current;
@@ -919,6 +1179,7 @@
     async function saveProfile() {
       const name = document.getElementById('profileName').value.trim();
       if (!name) { showToast('הזן שם פרופיל'); return; }
+      await saveParams(true);
       try {
         await fetch('/api/profiles', {
           method: 'POST',
@@ -939,10 +1200,9 @@
         const data = await resp.json();
         if (data.ok) {
           showToast(`פרופיל "${name}" נטען`);
+          _initialLoadDone = false;
           await loadParams();
-        } else {
-          showToast(data.error || 'שגיאה');
-        }
+        } else { showToast(data.error || 'שגיאה'); }
       } catch (e) { showToast('שגיאה בטעינת פרופיל'); }
     }
 
@@ -957,7 +1217,7 @@
       } catch (e) { showToast('שגיאה במחיקת פרופיל'); }
     }
 
-    /* ---- Logs ---- */
+    /* ==== Logs ==== */
     async function clearLogs() {
       try {
         await fetch('/api/logs', { method: 'DELETE' });
@@ -984,21 +1244,22 @@
       } catch (e) { /* ignore */ }
     }
 
-    /* ---- Browser notification preference from localStorage ---- */
+    /* ==== Browser notification preference ==== */
     function initNotifPreference() {
       const saved = localStorage.getItem('browserNotif');
       const cb = document.getElementById('browserNotif');
-      if (saved === 'true') {
-        cb.checked = true;
-        requestNotifPermission();
-      }
+      if (saved === 'true') { cb.checked = true; requestNotifPermission(); }
       cb.addEventListener('change', () => {
         localStorage.setItem('browserNotif', cb.checked);
         if (cb.checked) requestNotifPermission();
       });
     }
 
-    /* ---- Init ---- */
+    /* ==== Init ==== */
+    msInit('ms-manufacturer', 'בחר יצרן...');
+    msInit('ms-model', 'בחר דגם...');
+    msInit('ms-subModel', 'בחר תת-דגם...');
+
     initNotifPreference();
     loadParams();
     loadProfiles();

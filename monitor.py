@@ -23,7 +23,6 @@ from fake_useragent import UserAgent
 import config
 
 BASE_DIR = Path(__file__).parent
-SEEN_PATH = BASE_DIR / config.SEEN_FILE
 LOG_PATH = BASE_DIR / config.LOG_FILE
 FOUND_PATH = BASE_DIR / config.FOUND_FILE
 
@@ -64,8 +63,15 @@ _load_found()
 
 
 def get_found_listings() -> list[dict]:
+    """Returns non-dismissed listings for the UI."""
     with _found_lock:
-        return list(_found_listings)
+        return [l for l in _found_listings if not l.get("dismissed")]
+
+
+def _get_seen_tokens() -> set[str]:
+    """All tokens (including dismissed) for dedup tracking."""
+    with _found_lock:
+        return {l["token"] for l in _found_listings}
 
 
 def _append_found(listings: list[dict]) -> None:
@@ -77,12 +83,13 @@ def _append_found(listings: list[dict]) -> None:
 
 
 def remove_found(token: str) -> bool:
+    """Mark a listing as dismissed (hidden from UI but still tracked)."""
     with _found_lock:
-        before = len(_found_listings)
-        _found_listings[:] = [l for l in _found_listings if l.get("token") != token]
-        if len(_found_listings) < before:
-            _save_found()
-            return True
+        for entry in _found_listings:
+            if entry.get("token") == token and not entry.get("dismissed"):
+                entry["dismissed"] = True
+                _save_found()
+                return True
         return False
 
 
@@ -326,46 +333,19 @@ def fetch_listings(session: requests.Session) -> list[dict] | None:
     return unique
 
 
-# ---------------------------------------------------------------------------
-# Seen listings persistence (with TTL pruning)
-# ---------------------------------------------------------------------------
-
-def load_seen() -> dict[str, str]:
-    """Returns {token: iso_timestamp}."""
-    if not SEEN_PATH.exists():
-        return {}
-    try:
-        data = json.loads(SEEN_PATH.read_text(encoding="utf-8"))
-        if isinstance(data, list):
-            now = datetime.now(timezone.utc).isoformat()
-            return {token: now for token in data}
-        return data
-    except (json.JSONDecodeError, TypeError):
-        return {}
-
-
-def save_seen(seen: dict[str, str]) -> None:
-    SEEN_PATH.write_text(json.dumps(seen, ensure_ascii=False, indent=2), encoding="utf-8")
-
-
-def clear_seen() -> None:
-    save_seen({})
-
-
-def prune_seen(seen: dict[str, str]) -> dict[str, str]:
-    cutoff = datetime.now(timezone.utc).timestamp() - config.SEEN_TTL_DAYS * 86400
-    pruned: dict[str, str] = {}
-    for token, ts in seen.items():
-        try:
-            entry_time = datetime.fromisoformat(ts).timestamp()
-        except (ValueError, TypeError):
-            entry_time = 0
-        if entry_time > cutoff:
-            pruned[token] = ts
-    removed = len(seen) - len(pruned)
+def _prune_found() -> None:
+    """Remove entries older than SEEN_TTL_DAYS from the found store."""
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=config.SEEN_TTL_DAYS)).strftime("%Y-%m-%d %H:%M:%S")
+    with _found_lock:
+        before = len(_found_listings)
+        _found_listings[:] = [
+            l for l in _found_listings if (l.get("found_at", "") >= cutoff)
+        ]
+        removed = before - len(_found_listings)
+        if removed > 0:
+            _save_found()
     if removed > 0:
-        log.info("Pruned %d old entries from seen listings (older than %d days)", removed, config.SEEN_TTL_DAYS)
-    return pruned
+        log.info("Pruned %d old entries from found listings (older than %d days)", removed, config.SEEN_TTL_DAYS)
 
 
 # ---------------------------------------------------------------------------
@@ -466,16 +446,17 @@ def send_telegram(new_listings: list[dict]) -> bool:
 # Main loop
 # ---------------------------------------------------------------------------
 
-def check_once(session: requests.Session, seen: dict[str, str]) -> dict[str, str]:
+def check_once(session: requests.Session) -> None:
     listings = fetch_listings(session)  # raises CaptchaDetected on CAPTCHA
     if not listings:
-        return seen
+        return
 
-    new_listings = [lst for lst in listings if lst["token"] not in seen]
+    seen_tokens = _get_seen_tokens()
+    new_listings = [lst for lst in listings if lst["token"] not in seen_tokens]
 
     if not new_listings:
         log.info("No new listings found")
-        return seen
+        return
 
     log.info("Found %d new listing(s)!", len(new_listings))
 
@@ -503,17 +484,12 @@ def check_once(session: requests.Session, seen: dict[str, str]) -> dict[str, str
 
     send_telegram(new_listings)
 
-    now = datetime.now(timezone.utc).isoformat()
-    for lst in new_listings:
-        seen[lst["token"]] = now
-    save_seen(seen)
-    return seen
-
 
 def run_loop() -> None:
     """Run the monitor loop. Can be called from a background thread or from main()."""
     shutdown_event.clear()
     _reset_state()
+    _prune_found()
 
     log.info("=" * 60)
     log.info("Starting Yad2 vehicle monitor")
@@ -521,14 +497,12 @@ def run_loop() -> None:
     log.info("=" * 60)
 
     session = create_session()
-    seen = load_seen()
-    seen = prune_seen(seen)
 
     captcha_backoff = 0
 
     while not shutdown_event.is_set():
         try:
-            seen = check_once(session, seen)
+            check_once(session)
             captcha_backoff = 0
             _update_state(
                 last_check_at=datetime.now(timezone.utc).isoformat(),

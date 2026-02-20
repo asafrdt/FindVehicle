@@ -19,12 +19,6 @@ YAD2_PARAMS = {
 
 CHECK_INTERVAL_SECONDS = 20
 
-DISPLAY_NAMES = {
-    "manufacturer": {"21": "יונדאי"},
-    "model": {"10279": "איוניק"},
-    "subModel": {"104856": "Premium FL היברידי אוט׳ 1.6 (141 כ״ס)"},
-}
-
 AUTO_START = os.getenv("AUTO_START", "0") == "1"
 
 GMAIL_ADDRESS = os.getenv("GMAIL_ADDRESS", "")
@@ -34,7 +28,6 @@ NOTIFY_EMAIL = os.getenv("NOTIFY_EMAIL", "")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
 
-SEEN_FILE = "seen_listings.json"
 FOUND_FILE = "found_listings.json"
 PROFILES_FILE = "profiles.json"
 LOG_FILE = "monitor.log"
