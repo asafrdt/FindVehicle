@@ -10,7 +10,7 @@ import smtplib
 import sys
 import threading
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from logging.handlers import RotatingFileHandler
@@ -25,9 +25,113 @@ import config
 BASE_DIR = Path(__file__).parent
 SEEN_PATH = BASE_DIR / config.SEEN_FILE
 LOG_PATH = BASE_DIR / config.LOG_FILE
+FOUND_PATH = BASE_DIR / config.FOUND_FILE
 
 shutdown_event = threading.Event()
 
+# ---------------------------------------------------------------------------
+# Found listings persistence (Phase 1a)
+# ---------------------------------------------------------------------------
+
+_found_listings: list[dict] = []
+_found_lock = threading.Lock()
+_FOUND_MAX = 500
+
+
+def _load_found() -> None:
+    global _found_listings
+    if not FOUND_PATH.exists():
+        return
+    try:
+        data = json.loads(FOUND_PATH.read_text(encoding="utf-8"))
+        if isinstance(data, list):
+            _found_listings = data[-_FOUND_MAX:]
+    except (json.JSONDecodeError, TypeError, OSError):
+        pass
+
+
+def _save_found() -> None:
+    try:
+        FOUND_PATH.write_text(
+            json.dumps(_found_listings, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+    except OSError:
+        pass
+
+
+_load_found()
+
+
+def get_found_listings() -> list[dict]:
+    with _found_lock:
+        return list(_found_listings)
+
+
+def _append_found(listings: list[dict]) -> None:
+    with _found_lock:
+        _found_listings.extend(listings)
+        if len(_found_listings) > _FOUND_MAX:
+            del _found_listings[: len(_found_listings) - _FOUND_MAX]
+        _save_found()
+
+
+def remove_found(token: str) -> bool:
+    with _found_lock:
+        before = len(_found_listings)
+        _found_listings[:] = [l for l in _found_listings if l.get("token") != token]
+        if len(_found_listings) < before:
+            _save_found()
+            return True
+        return False
+
+
+def clear_found() -> None:
+    with _found_lock:
+        _found_listings.clear()
+        _save_found()
+
+
+# ---------------------------------------------------------------------------
+# Monitor state dict (Phase 1b + Phase 2)
+# ---------------------------------------------------------------------------
+
+_state: dict = {
+    "next_check_at": None,
+    "last_check_at": None,
+    "checks_count": 0,
+    "found_total": 0,
+    "captcha_active": False,
+    "captcha_backoff_until": None,
+}
+_state_lock = threading.Lock()
+
+
+def get_state() -> dict:
+    with _state_lock:
+        return dict(_state)
+
+
+def _update_state(**kwargs) -> None:
+    with _state_lock:
+        _state.update(kwargs)
+
+
+def _reset_state() -> None:
+    with _state_lock:
+        _state.update(
+            next_check_at=None,
+            last_check_at=None,
+            checks_count=0,
+            found_total=0,
+            captcha_active=False,
+            captcha_backoff_until=None,
+        )
+
+
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
 
 def setup_logging() -> logging.Logger:
     logger = logging.getLogger("yad2_monitor")
@@ -159,6 +263,15 @@ def extract_listing_info(item: dict) -> dict:
     token = item.get("token", "")
     link = f"https://www.yad2.co.il/vehicles/item/{token}" if token else ""
 
+    img = ""
+    images = item.get("images")
+    if isinstance(images, list) and images:
+        first = images[0]
+        if isinstance(first, dict):
+            img = first.get("src", first.get("url", ""))
+        elif isinstance(first, str):
+            img = first
+
     return {
         "token": token,
         "model": item.get("model", {}).get("text", ""),
@@ -170,6 +283,7 @@ def extract_listing_info(item: dict) -> dict:
         "hand": hand,
         "area": area,
         "link": link,
+        "img": img,
     }
 
 
@@ -232,6 +346,10 @@ def load_seen() -> dict[str, str]:
 
 def save_seen(seen: dict[str, str]) -> None:
     SEEN_PATH.write_text(json.dumps(seen, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def clear_seen() -> None:
+    save_seen({})
 
 
 def prune_seen(seen: dict[str, str]) -> dict[str, str]:
@@ -307,6 +425,44 @@ def send_email(new_listings: list[dict]) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# Telegram notification (Phase 5b)
+# ---------------------------------------------------------------------------
+
+def send_telegram(new_listings: list[dict]) -> bool:
+    token = config.TELEGRAM_BOT_TOKEN
+    chat_id = config.TELEGRAM_CHAT_ID
+    if not token or not chat_id:
+        return False
+
+    lines = []
+    for lst in new_listings:
+        price = lst["price"]
+        price_s = f"{price:,}₪" if isinstance(price, (int, float)) and price else "?"
+        km = lst.get("km")
+        km_s = f"{km:,} ק\"מ" if isinstance(km, (int, float)) and km else "לא צוין"
+        lines.append(
+            f"🚗 {lst['manufacturer']} {lst['model']}\n"
+            f"💰 {price_s} | {lst['year']} | {lst['hand']}\n"
+            f"🛣 {km_s}\n"
+            f"📍 {lst['area']}\n"
+            f"🔗 {lst['link']}"
+        )
+    text = "\n\n".join(lines)
+
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    try:
+        resp = requests.post(url, json={"chat_id": chat_id, "text": text}, timeout=10)
+        if resp.ok:
+            log.info("Telegram message sent successfully")
+        else:
+            log.warning("Telegram API returned %d: %s", resp.status_code, resp.text[:200])
+        return resp.ok
+    except requests.RequestException as exc:
+        log.error("Failed to send Telegram message: %s", exc)
+        return False
+
+
+# ---------------------------------------------------------------------------
 # Main loop
 # ---------------------------------------------------------------------------
 
@@ -323,6 +479,15 @@ def check_once(session: requests.Session, seen: dict[str, str]) -> dict[str, str
 
     log.info("Found %d new listing(s)!", len(new_listings))
 
+    _update_state(found_total=get_state()["found_total"] + len(new_listings))
+
+    stamped = []
+    for lst in new_listings:
+        entry = dict(lst)
+        entry["found_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        stamped.append(entry)
+    _append_found(stamped)
+
     for lst in new_listings:
         log.info(
             "New listing: token=%s | %s %s | price=%s | year=%s | km=%s | %s | %s",
@@ -336,21 +501,7 @@ def check_once(session: requests.Session, seen: dict[str, str]) -> dict[str, str
             lst["area"],
         )
 
-    email_sent = send_email(new_listings)
-
-    if email_sent:
-        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        log.info("--- Notification sent at %s ---", now_str)
-        for lst in new_listings:
-            log.info(
-                "  Notified: %s %s %s | price=%s | %s",
-                lst["manufacturer"],
-                lst["model"],
-                lst["sub_model"],
-                lst["price"],
-                lst["link"],
-            )
-        log.info("--- End of notification details ---")
+    send_telegram(new_listings)
 
     now = datetime.now(timezone.utc).isoformat()
     for lst in new_listings:
@@ -359,14 +510,10 @@ def check_once(session: requests.Session, seen: dict[str, str]) -> dict[str, str
     return seen
 
 
-def main() -> None:
-    def _handle_signal(signum, _frame):
-        sig_name = signal.Signals(signum).name
-        log.info("Received %s — shutting down gracefully...", sig_name)
-        shutdown_event.set()
-
-    signal.signal(signal.SIGINT, _handle_signal)
-    signal.signal(signal.SIGTERM, _handle_signal)
+def run_loop() -> None:
+    """Run the monitor loop. Can be called from a background thread or from main()."""
+    shutdown_event.clear()
+    _reset_state()
 
     log.info("=" * 60)
     log.info("Starting Yad2 vehicle monitor")
@@ -383,6 +530,12 @@ def main() -> None:
         try:
             seen = check_once(session, seen)
             captcha_backoff = 0
+            _update_state(
+                last_check_at=datetime.now(timezone.utc).isoformat(),
+                checks_count=get_state()["checks_count"] + 1,
+                captcha_active=False,
+                captcha_backoff_until=None,
+            )
         except CaptchaDetected:
             if captcha_backoff == 0:
                 captcha_backoff = config.CHECK_INTERVAL_SECONDS
@@ -391,17 +544,36 @@ def main() -> None:
                     captcha_backoff * config.CAPTCHA_BACKOFF_MULTIPLIER,
                     config.CAPTCHA_BACKOFF_MAX,
                 )
+            backoff_until = (datetime.now(timezone.utc) + timedelta(seconds=captcha_backoff)).isoformat()
+            _update_state(captcha_active=True, captcha_backoff_until=backoff_until)
             log.warning("CAPTCHA detected — backing off for %d seconds", captcha_backoff)
             session = create_session()
             shutdown_event.wait(captcha_backoff)
+            _update_state(captcha_active=False, captcha_backoff_until=None)
             continue
         except Exception:
             log.exception("Unexpected error during check cycle")
 
-        log.info("Waiting %d seconds until next check...", config.CHECK_INTERVAL_SECONDS)
-        shutdown_event.wait(config.CHECK_INTERVAL_SECONDS)
+        interval = config.CHECK_INTERVAL_SECONDS
+        next_at = (datetime.now(timezone.utc) + timedelta(seconds=interval)).isoformat()
+        _update_state(next_check_at=next_at)
+        log.info("Waiting %d seconds until next check...", interval)
+        shutdown_event.wait(interval)
 
+    _update_state(next_check_at=None)
     log.info("Monitor stopped.")
+
+
+def main() -> None:
+    def _handle_signal(signum, _frame):
+        sig_name = signal.Signals(signum).name
+        log.info("Received %s — shutting down gracefully...", sig_name)
+        shutdown_event.set()
+
+    signal.signal(signal.SIGINT, _handle_signal)
+    signal.signal(signal.SIGTERM, _handle_signal)
+
+    run_loop()
 
 
 if __name__ == "__main__":

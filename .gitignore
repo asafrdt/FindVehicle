@@ -1,5 +1,7 @@
 .env
 seen_listings.json
+found_listings.json
+profiles.json
 *.log
 __pycache__/
 *.pyc

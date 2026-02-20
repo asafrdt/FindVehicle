@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FindVehicle — Yad2 Monitor</title>
+  <link rel="icon" href="/favicon.ico" type="image/svg+xml">
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #242838;
+      --border: #2e3348;
+      --text: #e4e6f0;
+      --text-muted: #8b8fa8;
+      --accent: #6c8cff;
+      --accent-hover: #8ba4ff;
+      --green: #34d399;
+      --green-dim: #064e3b;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .shell {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      padding: 12px 16px;
+      gap: 10px;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    header h1 { font-size: 1.1rem; font-weight: 600; }
+
+    .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .header-stats {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      display: flex;
+      gap: 10px;
+    }
+    .header-stats span b { color: var(--text); font-weight: 600; }
+
+    .countdown-text {
+      font-size: 0.72rem;
+      color: var(--accent);
+      min-width: 120px;
+      text-align: center;
+    }
+
+    .status-badge { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-muted); }
+    .status-dot {
+      width: 9px; height: 9px; border-radius: 50%;
+      background: var(--red); transition: background 0.3s;
+    }
+    .status-dot.running {
+      background: var(--green);
+      box-shadow: 0 0 6px rgba(52,211,153,0.5);
+    }
+
+    .btn {
+      padding: 6px 14px; border: none; border-radius: 5px;
+      font-size: 0.8rem; font-weight: 500; cursor: pointer;
+      transition: background 0.2s, opacity 0.2s;
+    }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-start { background: var(--green); color: #111; }
+    .btn-start:hover:not(:disabled) { background: #4ade80; }
+    .btn-stop { background: var(--red); color: #111; }
+    .btn-stop:hover:not(:disabled) { background: #fca5a5; }
+    .btn-save {
+      background: var(--accent); color: #fff;
+      width: 100%; padding: 8px; font-size: 0.85rem; margin-top: 4px;
+    }
+    .btn-save:hover:not(:disabled) { background: var(--accent-hover); }
+    .btn-sm {
+      padding: 3px 10px;
+      font-size: 0.72rem;
+      border-radius: 4px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+    .btn-sm:hover { color: var(--text); border-color: var(--accent); }
+    .btn-sm.danger:hover { border-color: var(--red); color: var(--red); }
+
+    /* CAPTCHA banner */
+    .captcha-banner {
+      display: none;
+      background: rgba(248,113,113,0.15);
+      border: 1px solid var(--red);
+      border-radius: var(--radius);
+      padding: 8px 16px;
+      color: var(--red);
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .captcha-banner.visible { display: block; }
+
+    /* Two-column body */
+    .main { display: flex; gap: 12px; flex: 1; min-height: 0; }
+
+    .col-params {
+      width: 340px; flex-shrink: 0;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .col-right {
+      flex: 1; min-width: 0;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .card h2 {
+      font-size: 0.85rem; font-weight: 600;
+      color: var(--accent);
+    }
+
+    .card-actions { display: flex; gap: 6px; align-items: center; }
+
+    /* Form fields */
+    .field { margin-bottom: 8px; }
+    .field label {
+      display: block; font-size: 0.75rem;
+      color: var(--text-muted); margin-bottom: 2px;
+    }
+    .field input[type="number"],
+    .field input[type="text"] {
+      width: 100%; padding: 6px 8px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 5px; color: var(--text); font-size: 0.82rem;
+      outline: none; transition: border-color 0.2s;
+    }
+    .field input:focus { border-color: var(--accent); }
+    .field input:disabled { opacity: 0.55; cursor: not-allowed; }
+    .field select {
+      width: 100%; padding: 6px 8px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 5px; color: var(--text); font-size: 0.82rem;
+      outline: none;
+    }
+
+    .range-row { display: flex; align-items: center; gap: 6px; }
+    .range-row input { flex: 1; }
+    .range-sep { color: var(--text-muted); font-size: 0.82rem; flex-shrink: 0; }
+
+    .checkbox-group { display: flex; gap: 14px; flex-wrap: wrap; }
+    .checkbox-item {
+      display: flex; align-items: center; gap: 5px;
+      cursor: pointer; font-size: 0.8rem;
+    }
+    .checkbox-item input[type="checkbox"] {
+      width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer;
+    }
+
+    .pending-indicator {
+      display: none;
+      font-size: 0.72rem;
+      color: var(--yellow);
+      margin-top: 4px;
+      text-align: center;
+    }
+    .pending-indicator.visible { display: block; }
+
+    /* Profiles card */
+    .profiles-row {
+      display: flex; gap: 6px; align-items: center; margin-bottom: 8px;
+    }
+    .profiles-row select { flex: 1; }
+    .profiles-row input[type="text"] {
+      flex: 1; padding: 5px 8px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 5px; color: var(--text); font-size: 0.78rem;
+      outline: none;
+    }
+
+    /* Listings panel */
+    .listings-card {
+      flex: 0 0 auto;
+      max-height: 40%;
+      display: flex;
+      flex-direction: column;
+    }
+    .listings-card h2 { color: var(--green); }
+
+    .listings-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .listings-toolbar select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+      font-size: 0.72rem;
+      padding: 3px 6px;
+      outline: none;
+    }
+
+    .listings-box {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .listing-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      background: var(--green-dim);
+      border: 1px solid rgba(52,211,153,0.25);
+      border-radius: 6px;
+      font-size: 0.8rem;
+      direction: rtl;
+    }
+
+    .listing-thumb {
+      width: 48px; height: 48px;
+      border-radius: 4px;
+      object-fit: cover;
+      flex-shrink: 0;
+      background: var(--surface2);
+    }
+
+    .listing-info {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      align-items: center;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .listing-tag {
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      white-space: nowrap;
+    }
+    .listing-tag b { color: var(--text); font-weight: 500; }
+
+    .listing-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .listing-link {
+      color: var(--green);
+      text-decoration: none;
+      font-size: 0.78rem;
+      font-weight: 500;
+      border: 1px solid rgba(52,211,153,0.3);
+      padding: 3px 10px;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+    .listing-link:hover { background: rgba(52,211,153,0.15); }
+
+    .dismiss-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.9rem;
+      padding: 2px 6px;
+      border-radius: 3px;
+      transition: color 0.2s, background 0.2s;
+    }
+    .dismiss-btn:hover { color: var(--red); background: rgba(248,113,113,0.15); }
+
+    .listing-time {
+      color: var(--text-muted);
+      font-size: 0.68rem;
+      flex-shrink: 0;
+    }
+
+    .listings-empty {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      text-align: center;
+      padding: 16px 0;
+    }
+
+    /* Log panel */
+    .log-card { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+
+    .log-box {
+      flex: 1;
+      background: #0a0c12;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 10px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 0.72rem;
+      line-height: 1.45;
+      direction: ltr;
+      text-align: left;
+      color: var(--text-muted);
+    }
+    .log-box .log-line { white-space: pre-wrap; word-break: break-all; }
+    .log-box .log-line-info { color: var(--text); }
+    .log-box .log-line-warning { color: var(--yellow); }
+    .log-box .log-line-error { color: var(--red); }
+    .log-box .log-line-new {
+      color: var(--green);
+      font-weight: 600;
+      background: rgba(52,211,153,0.08);
+      border-radius: 2px;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 16px; left: 50%;
+      transform: translateX(-50%) translateY(60px);
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); padding: 8px 20px;
+      border-radius: 6px; font-size: 0.8rem;
+      opacity: 0; transition: transform 0.3s, opacity 0.3s; z-index: 100;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <h1>FindVehicle</h1>
+      <div class="header-right">
+        <div class="header-stats">
+          <span>בדיקות: <b id="statChecks">0</b></span>
+          <span>נמצאו: <b id="statFound">0</b></span>
+        </div>
+        <span class="countdown-text" id="countdown"></span>
+        <div class="status-badge">
+          <span class="status-dot" id="statusDot"></span>
+          <span id="statusText">עצור</span>
+        </div>
+        <button class="btn btn-start" id="btnStart" onclick="startMonitor()">הפעל</button>
+        <button class="btn btn-stop"  id="btnStop"  onclick="stopMonitor()" disabled>עצור</button>
+      </div>
+    </header>
+
+    <div class="captcha-banner" id="captchaBanner">
+      ⚠ CAPTCHA — <span id="captchaText">ממתין...</span>
+    </div>
+
+    <div class="main">
+      <!-- LEFT: Profiles + Parameters -->
+      <div class="col-params">
+        <div class="card">
+          <div class="card-header">
+            <h2>פרופילים</h2>
+          </div>
+          <div class="profiles-row">
+            <select id="profileSelect" onchange="onProfileSelect()">
+              <option value="">— בחר פרופיל —</option>
+            </select>
+            <button class="btn-sm danger" onclick="deleteProfile()">מחק</button>
+          </div>
+          <div class="profiles-row">
+            <input type="text" id="profileName" placeholder="שם פרופיל חדש">
+            <button class="btn-sm" onclick="saveProfile()">שמור</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>פרמטרי חיפוש</h2>
+          <div class="field">
+            <label>יצרן</label>
+            <input type="text" id="manufacturer" disabled>
+          </div>
+          <div class="field">
+            <label>דגם</label>
+            <input type="text" id="model" disabled>
+          </div>
+          <div class="field">
+            <label>תת-דגם</label>
+            <input type="text" id="subModel" disabled>
+          </div>
+          <div class="field">
+            <label>שנה</label>
+            <div class="range-row">
+              <input type="number" id="yearFrom" min="1990" max="2030">
+              <span class="range-sep">—</span>
+              <input type="number" id="yearTo" min="1990" max="2030">
+            </div>
+          </div>
+          <div class="field">
+            <label>מחיר (₪)</label>
+            <div class="range-row">
+              <input type="number" id="priceFrom" step="1000">
+              <span class="range-sep">—</span>
+              <input type="number" id="priceTo" step="1000">
+            </div>
+          </div>
+          <div class="field">
+            <label>ק"מ</label>
+            <div class="range-row">
+              <input type="number" id="kmFrom" step="1000">
+              <span class="range-sep">—</span>
+              <input type="number" id="kmTo" step="1000">
+            </div>
+          </div>
+          <div class="field">
+            <label>יד</label>
+            <div class="range-row">
+              <input type="number" id="handFrom" min="0" max="10">
+              <span class="range-sep">—</span>
+              <input type="number" id="handTo" min="0" max="10">
+            </div>
+          </div>
+          <div class="field">
+            <div class="checkbox-group">
+              <label class="checkbox-item">
+                <input type="checkbox" id="priceOnly"> מחיר בלבד
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" id="imgOnly"> תמונות בלבד
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" id="ownerID"> מוכר פרטי
+              </label>
+            </div>
+          </div>
+          <div class="field">
+            <label>מרווח בדיקה</label>
+            <div class="range-row">
+              <input type="number" id="intervalMin" min="0" max="60" placeholder="דק׳">
+              <span class="range-sep">דק׳</span>
+              <input type="number" id="intervalSec" min="0" max="59" placeholder="שנ׳">
+              <span class="range-sep">שנ׳</span>
+            </div>
+          </div>
+          <div class="field">
+            <div class="checkbox-group">
+              <label class="checkbox-item">
+                <input type="checkbox" id="autoStart"> הפעלה אוטומטית
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" id="browserNotif"> התראות דפדפן
+              </label>
+            </div>
+          </div>
+          <button class="btn btn-save" onclick="saveParams()">שמור שינויים</button>
+          <div class="pending-indicator" id="pendingIndicator">⏳ שינויים ממתינים לסבב הבא</div>
+          <div style="margin-top:8px; text-align:center;">
+            <button class="btn-sm danger" onclick="resetSeen()">איפוס היסטוריה</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Listings + Logs -->
+      <div class="col-right">
+        <div class="card listings-card">
+          <div class="card-header">
+            <h2>רכבים שנמצאו</h2>
+            <div class="card-actions">
+              <button class="btn-sm" onclick="exportCsv()" title="ייצוא CSV">📥 CSV</button>
+              <button class="btn-sm danger" onclick="clearAllListings()">נקה הכל</button>
+            </div>
+          </div>
+          <div class="listings-toolbar">
+            <label style="font-size:0.72rem; color:var(--text-muted);">מיון:</label>
+            <select id="sortSelect" onchange="renderListings()">
+              <option value="date-desc">תאריך (חדש → ישן)</option>
+              <option value="date-asc">תאריך (ישן → חדש)</option>
+              <option value="price-asc">מחיר (נמוך → גבוה)</option>
+              <option value="price-desc">מחיר (גבוה → נמוך)</option>
+              <option value="year-desc">שנה (חדש → ישן)</option>
+              <option value="year-asc">שנה (ישן → חדש)</option>
+            </select>
+          </div>
+          <div class="listings-box" id="listingsBox">
+            <div class="listings-empty">לא נמצאו רכבים חדשים עדיין</div>
+          </div>
+        </div>
+
+        <div class="card log-card">
+          <div class="card-header">
+            <h2>יומן</h2>
+            <div class="card-actions">
+              <button class="btn-sm danger" onclick="clearLogs()">נקה יומן</button>
+            </div>
+          </div>
+          <div class="log-box" id="logBox"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    /* ---- State ---- */
+    let _listingsData = [];
+    let _prevListingsCount = 0;
+    let _savedParams = null;
+    let _lastCheckAt = null;
+    let _nextCheckAt = null;
+    let _countdownInterval = null;
+    let _isRunning = false;
+
+    /* ---- Helpers ---- */
+    function showToast(msg, ms = 2500) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), ms);
+    }
+
+    function parseRange(val) {
+      if (!val) return ['', ''];
+      const parts = val.split('-');
+      if (parts.length === 3 && parts[0] === '') return ['-1', parts[2]];
+      if (parts.length === 2) return [parts[0], parts[1]];
+      return [val, val];
+    }
+
+    function toRange(fromVal, toVal) {
+      const f = fromVal === '' ? '-1' : fromVal;
+      const t = toVal === '' ? '-1' : toVal;
+      return `${f}-${t}`;
+    }
+
+    function escapeHtml(s) {
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+
+    function fmtPrice(p) {
+      if (!p && p !== 0) return '?';
+      return Number(p).toLocaleString('he-IL') + ' ₪';
+    }
+
+    function fmtKm(k) {
+      if (!k && k !== 0) return '?';
+      return Number(k).toLocaleString('he-IL') + " ק\"מ";
+    }
+
+    function getIntervalSeconds() {
+      const m = parseInt(document.getElementById('intervalMin').value) || 0;
+      const s = parseInt(document.getElementById('intervalSec').value) || 0;
+      return Math.max(5, m * 60 + s);
+    }
+
+    function setIntervalFields(totalSeconds) {
+      document.getElementById('intervalMin').value = Math.floor(totalSeconds / 60);
+      document.getElementById('intervalSec').value = totalSeconds % 60;
+    }
+
+    function fmtCountdown(totalSeconds) {
+      const m = Math.floor(totalSeconds / 60);
+      const s = totalSeconds % 60;
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function getCurrentFormParams() {
+      return {
+        year: toRange(document.getElementById('yearFrom').value, document.getElementById('yearTo').value),
+        price: toRange(document.getElementById('priceFrom').value || '-1', document.getElementById('priceTo').value || '-1'),
+        km: toRange(document.getElementById('kmFrom').value || '-1', document.getElementById('kmTo').value || '-1'),
+        hand: toRange(document.getElementById('handFrom').value, document.getElementById('handTo').value),
+        priceOnly: document.getElementById('priceOnly').checked ? '1' : '0',
+        imgOnly: document.getElementById('imgOnly').checked ? '1' : '0',
+        ownerID: document.getElementById('ownerID').checked ? '1' : '0',
+        checkInterval: String(getIntervalSeconds()),
+      };
+    }
+
+    /* ---- Param-change awareness (Phase 6a) ---- */
+    function checkPendingChanges() {
+      if (!_isRunning || !_savedParams) {
+        document.getElementById('pendingIndicator').classList.remove('visible');
+        return;
+      }
+      const current = getCurrentFormParams();
+      const changed = JSON.stringify(current) !== JSON.stringify(_savedParams);
+      document.getElementById('pendingIndicator').classList.toggle('visible', changed);
+    }
+
+    document.addEventListener('input', (e) => {
+      if (e.target.closest('.col-params')) checkPendingChanges();
+    });
+
+    /* ---- Countdown (Phase 3a) ---- */
+    function startCountdownTicker() {
+      if (_countdownInterval) clearInterval(_countdownInterval);
+      _countdownInterval = setInterval(updateCountdown, 1000);
+    }
+
+    function updateCountdown() {
+      const el = document.getElementById('countdown');
+      if (!_nextCheckAt || !_isRunning) {
+        el.textContent = '';
+        return;
+      }
+      const remaining = Math.max(0, Math.round((new Date(_nextCheckAt) - Date.now()) / 1000));
+      if (remaining <= 0) {
+        el.textContent = 'בודק עכשיו...';
+      } else {
+        el.textContent = `בדיקה הבאה בעוד ${fmtCountdown(remaining)} דקות`;
+      }
+    }
+
+    /* ---- Browser notifications + beep (Phase 5a) ---- */
+    function requestNotifPermission() {
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    }
+
+    function playBeep() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = 880;
+        gain.gain.value = 0.15;
+        osc.start();
+        osc.stop(ctx.currentTime + 0.15);
+      } catch (e) { /* ignore */ }
+    }
+
+    function notifyNewListings(newItems) {
+      const notifEnabled = document.getElementById('browserNotif').checked;
+      if (!notifEnabled) return;
+      playBeep();
+      if ('Notification' in window && Notification.permission === 'granted') {
+        const first = newItems[0] || {};
+        new Notification('רכב חדש!', {
+          body: `${fmtPrice(first.price)} · ${first.area || ''}`,
+          icon: '/favicon.ico',
+        });
+      }
+    }
+
+    /* ---- Params ---- */
+    async function loadParams() {
+      try {
+        const resp = await fetch('/api/params');
+        const data = await resp.json();
+        document.getElementById('manufacturer').value = data.display.manufacturer || data.params.manufacturer;
+        document.getElementById('model').value = data.display.model || data.params.model;
+        document.getElementById('subModel').value = data.display.subModel || data.params.subModel;
+        const [yf, yt] = parseRange(data.params.year);
+        document.getElementById('yearFrom').value = yf;
+        document.getElementById('yearTo').value = yt;
+        const [pf, pt] = parseRange(data.params.price);
+        document.getElementById('priceFrom').value = pf === '-1' ? '' : pf;
+        document.getElementById('priceTo').value = pt === '-1' ? '' : pt;
+        const [kf, kt] = parseRange(data.params.km);
+        document.getElementById('kmFrom').value = kf === '-1' ? '' : kf;
+        document.getElementById('kmTo').value = kt === '-1' ? '' : kt;
+        const [hf, ht] = parseRange(data.params.hand);
+        document.getElementById('handFrom').value = hf;
+        document.getElementById('handTo').value = ht;
+        document.getElementById('priceOnly').checked = data.params.priceOnly === '1';
+        document.getElementById('imgOnly').checked = data.params.imgOnly === '1';
+        document.getElementById('ownerID').checked = data.params.ownerID === '1';
+        setIntervalFields(data.checkInterval);
+        document.getElementById('autoStart').checked = !!data.autoStart;
+
+        _savedParams = getCurrentFormParams();
+        checkPendingChanges();
+
+        if (data.autoStart && !_isRunning) {
+          startMonitor();
+        }
+      } catch (e) { console.error('Failed to load params', e); }
+    }
+
+    async function saveParams() {
+      const params = {
+        year: toRange(document.getElementById('yearFrom').value, document.getElementById('yearTo').value),
+        price: toRange(document.getElementById('priceFrom').value || '-1', document.getElementById('priceTo').value || '-1'),
+        km: toRange(document.getElementById('kmFrom').value || '-1', document.getElementById('kmTo').value || '-1'),
+        hand: toRange(document.getElementById('handFrom').value, document.getElementById('handTo').value),
+        priceOnly: document.getElementById('priceOnly').checked ? '1' : '0',
+        imgOnly: document.getElementById('imgOnly').checked ? '1' : '0',
+        ownerID: document.getElementById('ownerID').checked ? '1' : '0',
+      };
+      const checkInterval = getIntervalSeconds();
+      const autoStart = document.getElementById('autoStart').checked;
+      try {
+        const resp = await fetch('/api/params', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ params, checkInterval, autoStart }),
+        });
+        const data = await resp.json();
+        if (data.ok) {
+          showToast('הפרמטרים נשמרו בהצלחה');
+          _savedParams = getCurrentFormParams();
+          checkPendingChanges();
+        } else {
+          showToast('שגיאה: ' + (data.error || 'unknown'));
+        }
+      } catch (e) { showToast('שגיאה בשמירה'); }
+    }
+
+    /* ---- Monitor control ---- */
+    async function pollStatus() {
+      try {
+        const resp = await fetch('/api/monitor/status');
+        const data = await resp.json();
+        _isRunning = data.running;
+        document.getElementById('statusDot').classList.toggle('running', _isRunning);
+        document.getElementById('statusText').textContent = _isRunning ? 'פועל' : 'עצור';
+        document.getElementById('btnStart').disabled = _isRunning;
+        document.getElementById('btnStop').disabled = !_isRunning;
+
+        document.getElementById('statChecks').textContent = data.checks_count || 0;
+        document.getElementById('statFound').textContent = data.found_total || 0;
+
+        _nextCheckAt = data.next_check_at;
+        updateCountdown();
+
+        const newLastCheck = data.last_check_at;
+        if (newLastCheck && newLastCheck !== _lastCheckAt) {
+          _lastCheckAt = newLastCheck;
+          checkPendingChanges();
+        }
+
+        const banner = document.getElementById('captchaBanner');
+        if (data.captcha_active) {
+          banner.classList.add('visible');
+          if (data.captcha_backoff_until) {
+            const until = new Date(data.captcha_backoff_until);
+            document.getElementById('captchaText').textContent =
+              `המתנה עד ${until.toLocaleTimeString('he-IL')}`;
+          }
+        } else {
+          banner.classList.remove('visible');
+        }
+      } catch (e) { /* ignore */ }
+    }
+
+    async function startMonitor() {
+      try {
+        const resp = await fetch('/api/monitor/start', { method: 'POST' });
+        const data = await resp.json();
+        if (data.ok) showToast('המוניטור הופעל');
+        else showToast(data.error || 'שגיאה');
+        pollStatus();
+      } catch (e) { showToast('שגיאה בהפעלה'); }
+    }
+
+    async function stopMonitor() {
+      document.getElementById('btnStop').disabled = true;
+      try {
+        const resp = await fetch('/api/monitor/stop', { method: 'POST' });
+        const data = await resp.json();
+        if (data.ok) showToast('המוניטור נעצר');
+        else showToast(data.error || 'שגיאה');
+        pollStatus();
+      } catch (e) { showToast('שגיאה בעצירה'); }
+    }
+
+    /* ---- Listings ---- */
+    function sortListings(items) {
+      const mode = document.getElementById('sortSelect').value;
+      const sorted = [...items];
+      switch (mode) {
+        case 'date-desc': return sorted.reverse();
+        case 'date-asc': return sorted;
+        case 'price-asc': return sorted.sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0));
+        case 'price-desc': return sorted.sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0));
+        case 'year-desc': return sorted.sort((a, b) => (Number(b.year) || 0) - (Number(a.year) || 0));
+        case 'year-asc': return sorted.sort((a, b) => (Number(a.year) || 0) - (Number(b.year) || 0));
+        default: return sorted.reverse();
+      }
+    }
+
+    function renderListings() {
+      const box = document.getElementById('listingsBox');
+      if (_listingsData.length === 0) {
+        box.innerHTML = '<div class="listings-empty">לא נמצאו רכבים חדשים עדיין</div>';
+        return;
+      }
+      const sorted = sortListings(_listingsData);
+      box.innerHTML = sorted.map(l => {
+        const link = l.link ? `<a class="listing-link" href="${escapeHtml(l.link)}" target="_blank" rel="noopener">פתח ביד2</a>` : '';
+        const thumb = l.img ? `<img class="listing-thumb" src="${escapeHtml(l.img)}" alt="" loading="lazy" onerror="this.style.display='none'">` : '';
+        return `<div class="listing-item">
+          ${thumb}
+          <div class="listing-info">
+            <span class="listing-tag"><b>${escapeHtml(fmtPrice(l.price))}</b></span>
+            <span class="listing-tag">${escapeHtml(l.year || '?')}</span>
+            <span class="listing-tag">${escapeHtml(fmtKm(l.km))}</span>
+            <span class="listing-tag">${escapeHtml(l.area || '')}</span>
+            <span class="listing-tag">${escapeHtml(l.hand || '')}</span>
+            <span class="listing-time">${escapeHtml(l.found_at || '')}</span>
+          </div>
+          <div class="listing-actions">
+            ${link}
+            <button class="dismiss-btn" onclick="dismissListing('${escapeHtml(l.token)}')" title="הסר">✕</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    async function pollListings() {
+      try {
+        const resp = await fetch('/api/listings');
+        const data = await resp.json();
+        const items = data.listings || [];
+        if (items.length > _prevListingsCount && _prevListingsCount > 0) {
+          const diff = items.slice(_prevListingsCount);
+          notifyNewListings(diff);
+        }
+        _prevListingsCount = items.length;
+        _listingsData = items;
+        renderListings();
+      } catch (e) { /* ignore */ }
+    }
+
+    async function dismissListing(token) {
+      try {
+        await fetch(`/api/listings/${token}`, { method: 'DELETE' });
+        _listingsData = _listingsData.filter(l => l.token !== token);
+        _prevListingsCount = _listingsData.length;
+        renderListings();
+      } catch (e) { showToast('שגיאה בהסרה'); }
+    }
+
+    async function clearAllListings() {
+      if (!confirm('למחוק את כל הרכבים שנמצאו?')) return;
+      try {
+        await fetch('/api/listings', { method: 'DELETE' });
+        _listingsData = [];
+        _prevListingsCount = 0;
+        renderListings();
+        showToast('הרשימה נוקתה');
+      } catch (e) { showToast('שגיאה'); }
+    }
+
+    function exportCsv() {
+      window.open('/api/listings/export', '_blank');
+    }
+
+    /* ---- Seen reset (Phase 4c) ---- */
+    async function resetSeen() {
+      if (!confirm('לאפס את היסטוריית הרכבים שנצפו? הרכבים הקיימים יופיעו שוב כחדשים.')) return;
+      try {
+        await fetch('/api/seen', { method: 'DELETE' });
+        showToast('ההיסטוריה אופסה');
+      } catch (e) { showToast('שגיאה באיפוס'); }
+    }
+
+    /* ---- Profiles (Phase 6b) ---- */
+    async function loadProfiles() {
+      try {
+        const resp = await fetch('/api/profiles');
+        const profiles = await resp.json();
+        const sel = document.getElementById('profileSelect');
+        const current = sel.value;
+        sel.innerHTML = '<option value="">— בחר פרופיל —</option>';
+        for (const name of Object.keys(profiles)) {
+          const opt = document.createElement('option');
+          opt.value = name;
+          opt.textContent = name;
+          sel.appendChild(opt);
+        }
+        if (current && profiles[current]) sel.value = current;
+      } catch (e) { /* ignore */ }
+    }
+
+    async function saveProfile() {
+      const name = document.getElementById('profileName').value.trim();
+      if (!name) { showToast('הזן שם פרופיל'); return; }
+      try {
+        await fetch('/api/profiles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name }),
+        });
+        showToast(`פרופיל "${name}" נשמר`);
+        document.getElementById('profileName').value = '';
+        loadProfiles();
+      } catch (e) { showToast('שגיאה בשמירת פרופיל'); }
+    }
+
+    async function onProfileSelect() {
+      const name = document.getElementById('profileSelect').value;
+      if (!name) return;
+      try {
+        const resp = await fetch(`/api/profiles/${encodeURIComponent(name)}/load`, { method: 'POST' });
+        const data = await resp.json();
+        if (data.ok) {
+          showToast(`פרופיל "${name}" נטען`);
+          await loadParams();
+        } else {
+          showToast(data.error || 'שגיאה');
+        }
+      } catch (e) { showToast('שגיאה בטעינת פרופיל'); }
+    }
+
+    async function deleteProfile() {
+      const name = document.getElementById('profileSelect').value;
+      if (!name) { showToast('בחר פרופיל'); return; }
+      if (!confirm(`למחוק את הפרופיל "${name}"?`)) return;
+      try {
+        await fetch(`/api/profiles/${encodeURIComponent(name)}`, { method: 'DELETE' });
+        showToast(`פרופיל "${name}" נמחק`);
+        loadProfiles();
+      } catch (e) { showToast('שגיאה במחיקת פרופיל'); }
+    }
+
+    /* ---- Logs ---- */
+    async function clearLogs() {
+      try {
+        await fetch('/api/logs', { method: 'DELETE' });
+        document.getElementById('logBox').innerHTML = '';
+        showToast('היומן נוקה');
+      } catch (e) { showToast('שגיאה בניקוי יומן'); }
+    }
+
+    async function pollLogs() {
+      try {
+        const resp = await fetch('/api/logs');
+        const data = await resp.json();
+        const box = document.getElementById('logBox');
+        const wasAtBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
+        box.innerHTML = data.lines.map(line => {
+          let cls = 'log-line';
+          if (line.includes('New listing:') && !line.includes('No new listing')) cls += ' log-line-new';
+          else if (line.includes('| ERROR |')) cls += ' log-line-error';
+          else if (line.includes('| WARNING |')) cls += ' log-line-warning';
+          else if (line.includes('| INFO |')) cls += ' log-line-info';
+          return `<div class="${cls}">${escapeHtml(line)}</div>`;
+        }).join('');
+        if (wasAtBottom) box.scrollTop = box.scrollHeight;
+      } catch (e) { /* ignore */ }
+    }
+
+    /* ---- Browser notification preference from localStorage ---- */
+    function initNotifPreference() {
+      const saved = localStorage.getItem('browserNotif');
+      const cb = document.getElementById('browserNotif');
+      if (saved === 'true') {
+        cb.checked = true;
+        requestNotifPermission();
+      }
+      cb.addEventListener('change', () => {
+        localStorage.setItem('browserNotif', cb.checked);
+        if (cb.checked) requestNotifPermission();
+      });
+    }
+
+    /* ---- Init ---- */
+    initNotifPreference();
+    loadParams();
+    loadProfiles();
+    pollStatus();
+    pollListings();
+    pollLogs();
+    startCountdownTicker();
+    setInterval(pollStatus, 3000);
+    setInterval(pollListings, 4000);
+    setInterval(pollLogs, 4000);
+  </script>
+</body>
+</html>
