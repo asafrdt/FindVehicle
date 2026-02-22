@@ -2,6 +2,51 @@
 
 A Python script that checks Yad2 for new vehicle listings at a configurable interval and sends email notifications when new **private seller** listings appear (dealerships are excluded).
 
+## Architecture
+
+```
+┌──────────────────────────────────────────────────────┐
+│  Browser UI  (templates/index.html)                  │
+│  Hebrew RTL single-page app                          │
+└────────────────────┬─────────────────────────────────┘
+                     │ REST API
+┌────────────────────▼─────────────────────────────────┐
+│  Flask Server  (gui.py)                              │
+│  /api/params · /api/monitor · /api/listings · …      │
+└────────────────────┬─────────────────────────────────┘
+                     │ daemon thread
+┌────────────────────▼─────────────────────────────────┐
+│  Monitor Loop  (monitor.py)                          │
+│  fetch → parse → deduplicate → notify                │
+└───┬──────────────┬───────────────────┬───────────────┘
+    │              │                   │
+  Yad2 HTML    Telegram API      Gmail SMTP
+  + Next.js    (notifications)   (notifications)
+  __NEXT_DATA__
+```
+
+**Data storage** — flat JSON files (`found_listings.json`, `profiles.json`) + rotating log (`monitor.log`).
+
+## Software
+
+| Layer | Stack |
+|-------|-------|
+| HTTP client | `requests` + `fake-useragent` (rotating UA) |
+| HTML parsing | `beautifulsoup4` |
+| Web server | `Flask` |
+| Config | `python-dotenv` (`.env`) |
+| Notifications | Telegram Bot API, Gmail SMTP |
+| Frontend | Vanilla JS, CSS (no framework) |
+
+## Method
+
+1. **Fetch** — polls Yad2 search pages every `CHECK_INTERVAL_SECONDS` (default 20 s), up to 5 pages with a 3 s delay between them. Requests use browser-like headers and cookies.
+2. **Parse** — extracts the embedded `__NEXT_DATA__` JSON from the Next.js page. Listings are pulled from multiple feed categories (private, commercial, solo, platinum, boost).
+3. **Filter** — keeps only private-seller listings by excluding any item with an `agencyName` field.
+4. **Deduplicate** — compares listing tokens against previously seen tokens stored in `found_listings.json` (TTL 30 days, cap 500).
+5. **Notify** — sends a Telegram message (and optionally an email) for each new listing.
+6. **Anti-bot** — detects CAPTCHA pages (ShieldSquare) and applies exponential backoff up to 1 hour, then retries with a fresh session.
+
 ## Installation
 
 ```bash
